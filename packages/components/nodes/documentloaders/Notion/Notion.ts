@@ -1,8 +1,8 @@
 import { INode, INodeData, INodeParams } from '../../../src/Interface'
 import { TextSplitter } from 'langchain/text_splitter'
-import { DocxLoader } from 'langchain/document_loaders/fs/docx'
+import { NotionLoader } from 'langchain/document_loaders/fs/notion'
 
-class Docx_DocumentLoaders implements INode {
+class Notion_DocumentLoaders implements INode {
     label: string
     name: string
     description: string
@@ -13,19 +13,20 @@ class Docx_DocumentLoaders implements INode {
     inputs: INodeParams[]
 
     constructor() {
-        this.label = 'Docx File'
-        this.name = 'docxFile'
+        this.label = 'Notion Folder'
+        this.name = 'notionFolder'
         this.type = 'Document'
-        this.icon = 'Docx.png'
+        this.icon = 'notion.png'
         this.category = 'Document Loaders'
-        this.description = `Load data from DOCX files`
+        this.description = `Load data from Notion folder`
         this.baseClasses = [this.type]
         this.inputs = [
             {
-                label: 'Docx File',
-                name: 'docxFile',
-                type: 'file',
-                fileType: '.docx'
+                label: 'Notion Folder',
+                name: 'notionFolder',
+                type: 'string',
+                description: 'Get folder path',
+                placeholder: 'Paste folder path'
             },
             {
                 label: 'Text Splitter',
@@ -38,13 +39,9 @@ class Docx_DocumentLoaders implements INode {
 
     async init(nodeData: INodeData): Promise<any> {
         const textSplitter = nodeData.inputs?.textSplitter as TextSplitter
-        const docxFileBase64 = nodeData.inputs?.docxFile as string
-        const splitDataURI = docxFileBase64.split(',')
-        splitDataURI.pop()
-        const bf = Buffer.from(splitDataURI.pop() || '', 'base64')
+        const notionFolder = nodeData.inputs?.notionFolder as string
 
-        const blob = new Blob([bf])
-        const loader = new DocxLoader(blob)
+        const loader = new NotionLoader(notionFolder)
 
         if (textSplitter) {
             const docs = await loader.loadAndSplit(textSplitter)
@@ -56,4 +53,4 @@ class Docx_DocumentLoaders implements INode {
     }
 }
 
-module.exports = { nodeClass: Docx_DocumentLoaders }
+module.exports = { nodeClass: Notion_DocumentLoaders }
