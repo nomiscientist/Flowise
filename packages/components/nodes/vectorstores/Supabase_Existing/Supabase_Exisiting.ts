@@ -1,10 +1,10 @@
 import { INode, INodeData, INodeOutputsValue, INodeParams } from '../../../src/Interface'
-import { PineconeClient } from '@pinecone-database/pinecone'
-import { PineconeStore } from 'langchain/vectorstores/pinecone'
 import { Embeddings } from 'langchain/embeddings/base'
 import { getBaseClasses } from '../../../src/utils'
+import { SupabaseVectorStore } from 'langchain/vectorstores/supabase'
+import { createClient } from '@supabase/supabase-js'
 
-class Pinecone_Existing_VectorStores implements INode {
+class Supabase_Existing_VectorStores implements INode {
     label: string
     name: string
     description: string
@@ -16,12 +16,12 @@ class Pinecone_Existing_VectorStores implements INode {
     outputs: INodeOutputsValue[]
 
     constructor() {
-        this.label = 'Pinecone Load Existing Index'
-        this.name = 'pineconeExistingIndex'
-        this.type = 'Pinecone'
-        this.icon = 'pinecone.png'
+        this.label = 'Supabase Load Existing Index'
+        this.name = 'supabaseExistingIndex'
+        this.type = 'Supabase'
+        this.icon = 'supabase.svg'
         this.category = 'Vector Stores'
-        this.description = 'Load existing index from Pinecone (i.e: Document has been upserted)'
+        this.description = 'Load existing index from Supabase (i.e: Document has been upserted)'
         this.baseClasses = [this.type, 'VectorStoreRetriever', 'BaseRetriever']
         this.inputs = [
             {
@@ -30,52 +30,54 @@ class Pinecone_Existing_VectorStores implements INode {
                 type: 'Embeddings'
             },
             {
-                label: 'Pinecone Api Key',
-                name: 'pineconeApiKey',
+                label: 'Supabase API Key',
+                name: 'supabaseApiKey',
                 type: 'password'
             },
             {
-                label: 'Pinecone Environment',
-                name: 'pineconeEnv',
+                label: 'Supabase Project URL',
+                name: 'supabaseProjUrl',
                 type: 'string'
             },
             {
-                label: 'Pinecone Index',
-                name: 'pineconeIndex',
+                label: 'Table Name',
+                name: 'tableName',
+                type: 'string'
+            },
+            {
+                label: 'Query Name',
+                name: 'queryName',
                 type: 'string'
             }
         ]
         this.outputs = [
             {
-                label: 'Pinecone Retriever',
+                label: 'Supabase Retriever',
                 name: 'retriever',
                 baseClasses: this.baseClasses
             },
             {
-                label: 'Pinecone Vector Store',
+                label: 'Supabase Vector Store',
                 name: 'vectorStore',
-                baseClasses: [this.type, ...getBaseClasses(PineconeStore)]
+                baseClasses: [this.type, ...getBaseClasses(SupabaseVectorStore)]
             }
         ]
     }
 
     async init(nodeData: INodeData): Promise<any> {
-        const pineconeApiKey = nodeData.inputs?.pineconeApiKey as string
-        const pineconeEnv = nodeData.inputs?.pineconeEnv as string
-        const index = nodeData.inputs?.pineconeIndex as string
+        const supabaseApiKey = nodeData.inputs?.supabaseApiKey as string
+        const supabaseProjUrl = nodeData.inputs?.supabaseProjUrl as string
+        const tableName = nodeData.inputs?.tableName as string
+        const queryName = nodeData.inputs?.queryName as string
         const embeddings = nodeData.inputs?.embeddings as Embeddings
         const output = nodeData.outputs?.output as string
 
-        const client = new PineconeClient()
-        await client.init({
-            apiKey: pineconeApiKey,
-            environment: pineconeEnv
-        })
+        const client = createClient(supabaseProjUrl, supabaseApiKey)
 
-        const pineconeIndex = client.Index(index)
-
-        const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
-            pineconeIndex
+        const vectorStore = await SupabaseVectorStore.fromExistingIndex(embeddings, {
+            client,
+            tableName: tableName,
+            queryName: queryName
         })
 
         if (output === 'retriever') {
@@ -88,4 +90,4 @@ class Pinecone_Existing_VectorStores implements INode {
     }
 }
 
-module.exports = { nodeClass: Pinecone_Existing_VectorStores }
+module.exports = { nodeClass: Supabase_Existing_VectorStores }
