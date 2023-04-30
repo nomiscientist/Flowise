@@ -1,9 +1,10 @@
 import { INode, INodeData, INodeOutputsValue, INodeParams } from '../../../src/Interface'
-import { Chroma } from 'langchain/vectorstores/chroma'
+import { MemoryVectorStore } from 'langchain/vectorstores/memory'
 import { Embeddings } from 'langchain/embeddings/base'
+import { Document } from 'langchain/document'
 import { getBaseClasses } from '../../../src/utils'
 
-class Chroma_Existing_VectorStores implements INode {
+class InMemoryVectorStore_VectorStores implements INode {
     label: string
     name: string
     description: string
@@ -15,47 +16,50 @@ class Chroma_Existing_VectorStores implements INode {
     outputs: INodeOutputsValue[]
 
     constructor() {
-        this.label = 'Chroma Load Existing Index'
-        this.name = 'chromaExistingIndex'
-        this.type = 'Chroma'
-        this.icon = 'chroma.svg'
+        this.label = 'In-Memory Vector Store'
+        this.name = 'memoryVectorStore'
+        this.type = 'Memory'
+        this.icon = 'memory.svg'
         this.category = 'Vector Stores'
-        this.description = 'Load existing index from Chroma (i.e: Document has been upserted)'
+        this.description = 'In-memory vectorstore that stores embeddings and does an exact, linear search for the most similar embeddings.'
         this.baseClasses = [this.type, 'VectorStoreRetriever', 'BaseRetriever']
         this.inputs = [
+            {
+                label: 'Document',
+                name: 'document',
+                type: 'Document'
+            },
             {
                 label: 'Embeddings',
                 name: 'embeddings',
                 type: 'Embeddings'
-            },
-            {
-                label: 'Collection Name',
-                name: 'collectionName',
-                type: 'string'
             }
         ]
         this.outputs = [
             {
-                label: 'Chroma Retriever',
+                label: 'Memory Retriever',
                 name: 'retriever',
                 baseClasses: this.baseClasses
             },
             {
-                label: 'Chroma Vector Store',
+                label: 'Memory Vector Store',
                 name: 'vectorStore',
-                baseClasses: [this.type, ...getBaseClasses(Chroma)]
+                baseClasses: [this.type, ...getBaseClasses(MemoryVectorStore)]
             }
         ]
     }
 
     async init(nodeData: INodeData): Promise<any> {
-        const collectionName = nodeData.inputs?.collectionName as string
+        const docs = nodeData.inputs?.document as Document[]
         const embeddings = nodeData.inputs?.embeddings as Embeddings
         const output = nodeData.outputs?.output as string
 
-        const vectorStore = await Chroma.fromExistingCollection(embeddings, {
-            collectionName
-        })
+        const finalDocs = []
+        for (let i = 0; i < docs.length; i += 1) {
+            finalDocs.push(new Document(docs[i]))
+        }
+
+        const vectorStore = await MemoryVectorStore.fromDocuments(finalDocs, embeddings)
 
         if (output === 'retriever') {
             const retriever = vectorStore.asRetriever()
@@ -67,4 +71,4 @@ class Chroma_Existing_VectorStores implements INode {
     }
 }
 
-module.exports = { nodeClass: Chroma_Existing_VectorStores }
+module.exports = { nodeClass: InMemoryVectorStore_VectorStores }
