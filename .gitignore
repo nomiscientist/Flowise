@@ -25,11 +25,9 @@
 .DS_Store
 
 ## env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env
 
 ## turbo
 .turbo
@@ -38,5 +36,9 @@
 **/*.key
 **/api.json
 
+## uploads
+**/uploads
+
 ## compressed
 **/*.tgz
+config.bat
